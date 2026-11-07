@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SweetCraft — Мастерская Кондитера</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Pacifico & Nunito -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Pacifico&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: {
+                            50: '#FFFDF9',
+                            100: '#FFF9EF',
+                            200: '#FFF3DB',
+                            300: '#FFE7BD',
+                        },
+                        berry: {
+                            100: '#FFE4E6',
+                            300: '#FDA4AF',
+                            500: '#F43F5E',
+                            600: '#E11D48',
+                        },
+                        mint: {
+                            100: '#E6F4F1',
+                            300: '#99E0D2',
+                            500: '#2DD4BF',
+                        },
+                        caramel: {
+                            100: '#FEF3C7',
+                            400: '#FBBF24',
+                            700: '#B45309',
+                        },
+                        choco: {
+                            600: '#78350F',
+                            800: '#451A03',
+                        }
+                    },
+                    fontFamily: {
+                        cute: ['Pacifico', 'cursive'],
+                        body: ['Nunito', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'sweet': '0 10px 25px -5px rgba(244, 63, 94, 0.15), 0 8px 10px -6px rgba(244, 63, 94, 0.1)',
+                        'sweet-lg': '0 20px 30px -10px rgba(244, 63, 94, 0.25)',
+                        'inner-sweet': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #FFF9EF;
+            background-image: radial-gradient(#FBCFE8 1.5px, transparent 1.5px), radial-gradient(#FBCFE8 1.5px, #FFF9EF 1.5px);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+        }
+
+        .title-font {
+            font-family: 'Pacifico', cursive;
+        }
+
+        /* Custom Drag & Drop styling */
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .drop-zone-active {
+            border-color: #F43F5E !important;
+            background-color: #FFE4E6 !important;
+            transform: scale(1.02);
+        }
+
+        /* Layer animations */
+        @keyframes bounceIn {
+            0% {
+                transform: translateY(-50px) scale(0.8);
+                opacity: 0;
+            }
+
+            60% {
+                transform: translateY(10px) scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .cake-layer-anim {
+            animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Roulette wheel animation */
+        @keyframes spinWheel {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(1440deg);
+            }
+        }
+
+        .spinning {
+            animation: spinWheel 4s cubic-bezier(0.15, 0.85, 0.35, 1.05) forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #FFF3DB;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #FDA4AF;
+            border-radius: 9999px;
+        }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #F43F5E;
+            }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b-4 border-berry-300 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('catalog')">
+                <div class="w-12 h-12 bg-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-md rotate-[-6deg] hover:rotate-0 transition-transform">
+                    <i class="fa-solid fa-cake-candles"></i>
+                </div>
+                <div>
+                    <h1 class="title-font text-2xl md:text-3xl text-pink-600 tracking-wide">SweetCraft</h1>
+                    <p class="text-xs text-amber-700 font-bold -mt-1">Кондитерская Мастерская</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex bg-amber-50 p-1.5 rounded-full border-2 border-pink-200 shadow-inner">
+                <button id="nav-catalog" onclick="switchTab('catalog')" class="px-5 py-2 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 text-pink-600 bg-white shadow-sm">
+                    <i class="fa-solid fa-utensils"></i> Каталог
+                </button>
+                <button id="nav-roulette" onclick="switchTab('roulette')" class="px-5 py-2 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 text-slate-600 hover:text-pink-500">
+                    <i class="fa-solid fa-dice"></i> Рулетка
+                </button>
+                <button id="nav-builder" onclick="switchTab('builder')" class="px-5 py-2 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 text-slate-600 hover:text-pink-500">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Конструктор
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- SECTION 1: CATALOG & FILTER -->
+        <section id="section-catalog" class="space-y-6">
+            <!-- Banner -->
+            <div class="bg-gradient-to-r from-pink-400 via-rose-300 to-amber-200 rounded-3xl p-6 md:p-10 text-white shadow-sweet relative overflow-hidden">
+                <div class="relative z-10 max-w-xl">
+                    <span class="bg-white/30 backdrop-blur-md text-pink-900 font-bold text-xs uppercase px-3 py-1 rounded-full">Книга рецептов</span>
+                    <h2 class="title-font text-3xl md:text-5xl mt-2 mb-3 drop-shadow-sm">Найди свой идеальный рецепт!</h2>
+                    <p class="text-white/90 text-sm md:text-base font-semibold">Выбирай фильтры по настроению и вкусу или вдохновляйся авторскими десертами.</p>
+                </div>
+                <i class="fa-solid fa-cookie-bite absolute -right-6 -bottom-6 text-9xl text-white/20 rotate-12"></i>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="bg-white p-5 rounded-3xl border-2 border-pink-100 shadow-sm space-y-4">
+                <!-- Main Category Filter (Standard / Non-standard / All) -->
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-pink-100 pb-4">
+                    <span class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-pink-500"></i> Тип торта:
+                    </span>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setCategoryFilter('all')" id="cat-all" class="cat-btn px-4 py-1.5 rounded-full text-sm font-bold bg-pink-500 text-white shadow-sm transition-all">Все рецепты</button>
+                        <button onclick="setCategoryFilter('standard')" id="cat-standard" class="cat-btn px-4 py-1.5 rounded-full text-sm font-bold bg-pink-50 text-slate-600 hover:bg-pink-100 transition-all">Стандартные</button>
+                        <button onclick="setCategoryFilter('non_standard')" id="cat-non_standard" class="cat-btn px-4 py-1.5 rounded-full text-sm font-bold bg-pink-50 text-slate-600 hover:bg-pink-100 transition-all">Авторские / Особые</button>
+                    </div>
+                </div>
+
+                <!-- Flavor Profile Filters (Tags) -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-slate-700 text-sm mr-2 flex items-center gap-2">
+                        <i class="fa-solid fa-heart text-rose-400"></i> Вкус:
+                    </span>
+                    <div id="tag-filters-container" class="flex flex-wrap gap-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recipe Grid -->
+            <div id="recipe-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Recipe Cards inserted here by JS -->
+            </div>
+        </section>
+
+        <!-- SECTION 2: ROULETTE / RANDOM RECIPE -->
+        <section id="section-roulette" class="hidden space-y-8 text-center max-w-2xl mx-auto py-4">
+            <div class="space-y-3">
+                <span class="bg-pink-100 text-pink-600 font-bold text-xs uppercase px-4 py-1.5 rounded-full">Не знаешь что съесть?</span>
+                <h2 class="title-font text-4xl text-slate-800">Сладость-Рулетка</h2>
+                <p class="text-slate-600 font-semibold">Нажми на волшебную кнопку и довериться выбор судьбе!</p>
+            </div>
+
+            <!-- Interactive Roulette Container -->
+            <div class="relative bg-white p-8 rounded-3xl border-4 border-pink-200 shadow-sweet flex flex-col items-center justify-center min-h-[340px] overflow-hidden">
+                <!-- Wheel Display -->
+                <div id="wheel-container" class="relative w-56 h-56 rounded-full border-8 border-pink-300 shadow-inner flex items-center justify-center bg-gradient-to-tr from-pink-100 via-amber-50 to-teal-50 transition-all">
+                    <!-- Center indicator -->
+                    <div class="absolute -top-3 z-20 text-rose-500 text-3xl filter drop-shadow">
+                        <i class="fa-solid fa-location-pin-lock"></i>
+                    </div>
+                    <!-- Wheel Icon -->
+                    <div id="wheel-icon" class="text-7xl text-pink-400">
+                        <i class="fa-solid fa-gift"></i>
+                    </div>
+                </div>
+
+                <!-- Result Box (Hidden by default) -->
+                <div id="roulette-result" class="hidden animate-bounce mt-6 space-y-3">
+                    <h3 id="result-title" class="text-2xl font-black text-pink-600"></h3>
+                    <button id="result-btn" onclick="" class="px-6 py-2.5 bg-pink-500 text-white font-bold rounded-full shadow-md hover:bg-pink-600 transition-all flex items-center gap-2 mx-auto">
+                        <i class="fa-solid fa-book-open"></i> Открыть рецепт
+                    </button>
+                </div>
+
+                <!-- Spin Button -->
+                <button id="spin-btn" onclick="spinRoulette()" class="mt-8 px-8 py-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white title-font text-2xl rounded-2xl shadow-sweet hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                    <i class="fa-solid fa-play"></i> Крутить колесо!
+                </button>
+            </div>
+        </section>
+
+        <!-- SECTION 3: CAKE BUILDER (DRAG & DROP) -->
+        <section id="section-builder" class="hidden space-y-6">
+            <div class="bg-gradient-to-r from-teal-400 to-emerald-300 rounded-3xl p-6 text-white shadow-sweet flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="title-font text-3xl md:text-4xl mb-1">Конструктор Торта</h2>
+                    <p class="font-semibold text-white/90">Перетаскивай элементы на подставку или кликай по ним, чтобы собрать собственный рецепт!</p>
+                </div>
+                <button onclick="resetBuilder()" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Сбросить сборку
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                <!-- Component Selection Palette (Left Side - 7 Cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <!-- Builder Category Tabs -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 border-b border-pink-100">
+                        <button onclick="setBuilderTab('sponge')" id="btab-sponge" class="builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-pink-500 text-white shadow-sm flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-bread-slice"></i> 1. Бисквит
+                        </button>
+                        <button onclick="setBuilderTab('cream')" id="btab-cream" class="builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-600 hover:bg-pink-50 flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-stroopwafel"></i> 2. Крем
+                        </button>
+                        <button onclick="setBuilderTab('filling')" id="btab-filling" class="builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-600 hover:bg-pink-50 flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-jar"></i> 3. Начинка
+                        </button>
+                        <button onclick="setBuilderTab('toppings')" id="btab-toppings" class="builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-600 hover:bg-pink-50 flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-wand-magic"></i> 4. Декор
+                        </button>
+                    </div>
+
+                    <!-- Ingredients Grid -->
+                    <div id="builder-palette" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <!-- Populated by JS based on tab -->
+                    </div>
+                </div>
+
+                <!-- Interactive Canvas Plate (Right Side - 5 Cols) -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-3xl border-4 border-pink-100 shadow-sweet flex flex-col items-center justify-between min-h-[480px]">
+                    <div class="w-full text-center mb-2">
+                        <span class="text-xs font-black uppercase tracking-widest text-pink-400">Ваш шедевр</span>
+                        <h3 id="custom-cake-name" class="title-font text-2xl text-slate-800">Торт «Мечта Кондитера»</h3>
+                    </div>
+
+                    <!-- Drop Target / Cake Stack Container -->
+                    <div id="drop-zone" class="w-full h-72 border-2 border-dashed border-pink-200 rounded-2xl flex flex-col-reverse items-center justify-start p-4 relative transition-all overflow-hidden bg-amber-50/40">
+                        <!-- Cake Plate Graphics -->
+                        <div class="w-64 h-6 bg-slate-200 rounded-full shadow-md border-b-4 border-slate-300 mb-2 relative flex justify-center items-center">
+                            <div class="w-56 h-2 bg-slate-100 rounded-full"></div>
+                        </div>
+
+                        <!-- Stacked Cake Layers (JS dynamically appends here) -->
+                        <div id="cake-stack" class="w-full flex flex-col-reverse items-center justify-start gap-1 z-10">
+                            <p id="placeholder-text" class="text-xs text-slate-400 font-bold my-auto text-center">
+                                Перетащите сюда элементы или нажимайте на них в меню слева!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Builder Action Buttons -->
+                    <div class="w-full space-y-3 mt-4">
+                        <div class="bg-pink-50 p-3 rounded-2xl border border-pink-100 flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-600">Примерная цена торта:</span>
+                            <span id="builder-total-price" class="text-base font-black text-pink-600">0 ₽</span>
+                        </div>
+                        <button onclick="generateCustomRecipe()" class="w-full py-3.5 bg-pink-500 hover:bg-pink-600 text-white font-extrabold rounded-2xl shadow-sweet transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-scroll"></i> Сгенерировать рецепт
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- RECIPE MODAL -->
+    <div id="recipe-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-sweet-lg overflow-hidden my-8 transform transition-all border-4 border-pink-200">
+            <!-- Modal Header / Banner -->
+            <div class="relative h-48 sm:h-64 bg-slate-100">
+                <img id="modal-image" src="" alt="" class="w-full h-full object-cover">
+                <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white text-slate-700 rounded-full flex items-center justify-center shadow-md font-bold transition-all">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent p-6 text-white">
+                    <div id="modal-tags" class="flex flex-wrap gap-2 mb-2"></div>
+                    <h2 id="modal-title" class="title-font text-3xl sm:text-4xl drop-shadow"></h2>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+                <!-- Description -->
+                <p id="modal-description" class="text-slate-600 font-semibold italic border-l-4 border-pink-400 pl-4 py-1"></p>
+
+                <!-- Ingredients Section -->
+                <div>
+                    <h3 class="font-extrabold text-lg text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-basket-shopping text-pink-500"></i> Ингредиенты:
+                    </h3>
+                    <ul id="modal-ingredients" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700 font-bold bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
+                        <!-- Items appended by JS -->
+                    </ul>
+                </div>
+
+                <!-- Instructions Steps -->
+                <div>
+                    <h3 class="font-extrabold text-lg text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-pink-500"></i> Пошаговый рецепт:
+                    </h3>
+                    <ol id="modal-steps" class="space-y-3 text-sm text-slate-700">
+                        <!-- Steps appended by JS -->
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-pink-50 px-6 py-4 border-t border-pink-100 flex justify-end">
+                <button onclick="closeModal()" class="px-6 py-2 bg-pink-500 text-white font-bold rounded-xl shadow hover:bg-pink-600 transition-all">
+                    Понятненько!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t-2 border-pink-100 py-6 mt-12 text-center text-xs font-bold text-slate-400">
+        <p>SweetCraft © 2026. Сделано с любовью и сахаром! 🧁</p>
+    </footer>
+
+    <!-- JS APP LOGIC -->
+    <script>
+        /* ==========================================================================
+           1. ДАННЫЕ И КОНФИГУРАЦИЯ (DATABASE & CONFIG)
+           ========================================================================== */
+
+        const DATABASE = {
+            tags: [
+                { id: 'berry', label: '🍓 Ягодный', color: 'bg-rose-100 text-rose-600' },
+                { id: 'chocolate', label: '🍫 Шоколадный', color: 'bg-amber-100 text-amber-800' },
+                { id: 'coffee', label: '☕ Кофейный', color: 'bg-yellow-100 text-yellow-800' },
+                { id: 'nutty', label: '🥜 Ореховый', color: 'bg-orange-100 text-orange-700' },
+                { id: 'citrus', label: '🍋 Цитрусовый', color: 'bg-yellow-50 text-yellow-600' },
+                { id: 'tropical', label: '🥭 Тропический', color: 'bg-amber-200 text-amber-900' },
+                { id: 'floral', label: '🪻 Цветочный', color: 'bg-purple-100 text-purple-700' },
+                { id: 'spicy', label: '🌿 Пряный', color: 'bg-emerald-100 text-emerald-800' },
+                { id: 'coconut', label: '🥥 Кокосовый', color: 'bg-slate-100 text-slate-700' },
+                { id: 'fruit', label: '🍐 Фруктовый', color: 'bg-green-100 text-green-700' },
+                { id: 'cheese', label: '🧀 Изысканный', color: 'bg-yellow-200 text-yellow-900' },
+                { id: 'tea', label: '☕ Чайный', color: 'bg-teal-100 text-teal-800' },
+                { id: 'layered', label: '🥐 Слоеное', color: 'bg-stone-200 text-stone-800' },
+                { id: 'custard', label: '🥛 Заварной', color: 'bg-sky-100 text-sky-800' },
+                { id: 'sourcream', label: '🥛 Сметанный', color: 'bg-blue-100 text-blue-800' },
+                { id: 'honey', label: '🍯 Медовый', color: 'bg-amber-200 text-amber-900' },
+                { id: 'caramel', label: '🍫 Карамельный', color: 'bg-amber-300 text-amber-950' }
+            ],
+
+            recipes: [
+                {
+                    id: 1,
+                    title: "Шоколадный трюфель с вишней",
+                    type: "standard",
+                    tags: ["berry", "chocolate"],
+                    description: "Насыщенные влажные шоколадные коржи, яркая кислинка вишневого конфи и бархатный крем на основе темного шоколада.",
+                    image: "14896f3c708fd3b0ecb2a4b25e3883b1.jpg",
+                    ingredients: [
+                        "Мука — 250г",
+                        "Какао-порошок — 50г",
+                        "Крем-чиз — 400г",
+                        "Вишневое пюре — 200г",
+                        "Масло сливочное (82.5%) — 130г",
+                        "Сахар — 300г",
+                        "Сливки 33% — 180мл",
+                        "Яйца куриные — 2 шт.",
+                        "Разрыхлитель теста — 10г"
+                    ],
+                    steps: [
+                        "Подготовка сухой основы: Смешать в глубокой миске муку, какао-порошок и разрыхлитель, просеять через сито.",
+                        "Взбивание масляной основы: Мягкое сливочное масло взбить с сахаром и яйцами до пышной пены (5–7 минут).",
+                        "Выпекание бисквитов: Ввести сухие ингредиенты поочередно с теплой водой. Выпекать при 170°C 25 минут.",
+                        "Приготовление крема: Соединить холодный крем-чиз, сливки 33% и пудру, взбить до устойчивых пиков.",
+                        "Сборка торта: Положить первый корж, отсадить кольцо из крема, в центр выложить вишневое конфи, повторить."
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Фисташка с малиной",
+                    type: "standard",
+                    tags: ["berry", "nutty"],
+                    description: "Ароматные бисквиты с натуральной фисташковой пастой, пикантная малиновая начинка и нежный сливочный крем-чиз.",
+                    image: "bc781390792f9b2fcdecc0691a87f505.jpg",
+                    ingredients: [
+                        "Мука — 260г",
+                        "Фисташковая паста — 50г",
+                        "Крем-чиз — 400г",
+                        "Малиновое пюре — 200г",
+                        "Масло сливочное — 120г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 160мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Подготовка сухой основы: Смешать просеянную муку с разрыхлителем и молотыми фисташками.",
+                        "Взбивание масляной основы: Взбить масло с сахаром, яйцами и фисташковой пастой до пышности.",
+                        "Выпекание бисквитов: Вмешать сухие ингредиенты. Выпекать 3 коржа при 170°C 25 минут.",
+                        "Приготовление крема: Взбить крем-чиз со сливками 33% и сахарной пудрой.",
+                        "Сборка торта: Корж -> крем с бортиками -> малиновое конфи в центр -> корж."
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Карамельный медовик с грецким орехом",
+                    type: "non_standard",
+                    tags: ["honey", "nutty"],
+                    description: "Тончайшие ароматные медовые коржи, пропитанные нежным заварным кремом с добавлением домашней сливочной карамели и дробленым орехом.",
+                    image: "57243593a3e1fc931222b57474a67dbb.jpg",
+                    ingredients: [
+                        "Мука — 350г",
+                        "Мед натуральный — 70г",
+                        "Крем-чиз — 350г",
+                        "Вареное сгущенное молоко или карамель — 180г",
+                        "Масло сливочное — 100г",
+                        "Сахар — 150г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 2 шт.",
+                        "Сода пищевая — 5г"
+                    ],
+                    steps: [
+                        "Прогреть мед, сахар и масло до растворения. Добавить соду, снять с огня.",
+                        "В остывшую массу ввести яйца и муку, замесить мягкое тесто, разделить на части.",
+                        "Выпекать каждый корж при 170°C по 5–7 минут, обрезать сразу после выпечки.",
+                        "Взбить крем-чиз со сливками и карамелью до пышности.",
+                        "Прослоить коржи кремом и орехами, обсыпать бока крошкой."
+                    ]
+                },
+                {
+                    id: 4,
+                    title: "Манго — Маракуйя",
+                    type: "standard",
+                    tags: ["tropical", "berry"],
+                    description: "Воздушные ванильные коржи, яркая и сочная тропическая начинка из манго и маракуйи в нежной сливочной оболочке.",
+                    image: "f8324cf4d20b7b0ad57abe3e0ffd745f.jpg",
+                    ingredients: [
+                        "Мука — 280г",
+                        "Пюре манго-маракуйя — 200г",
+                        "Крем-чиз — 400г",
+                        "Масло сливочное — 120г",
+                        "Сахар — 220г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Муку просеять вместе с разрыхлителем.",
+                        "Мягкое сливочное масло взбить с сахаром и яйцами до светлой пены.",
+                        "Соединить сухие и влажные ингредиенты, выпекать при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками и пудрой до плотной текстуры.",
+                        "Чередовать слои: корж -> крем с бортиками -> тропическое пюре -> корж."
+                    ]
+                },
+                {
+                    id: 5,
+                    title: "Лаванда — Черника",
+                    type: "standard",
+                    tags: ["berry", "floral"],
+                    description: "Изысканные коржи с нотками лавандового аромата, насыщенная черничная начинка и легкий крем-чиз.",
+                    image: "d206171238043f95267f640b83f058aa.jpg",
+                    ingredients: [
+                        "Мука — 290г",
+                        "Цветки лаванды сушеные — 1 ч. л.",
+                        "Черничное пюре — 200г",
+                        "Крем-чиз — 400г",
+                        "Масло сливочное — 110г",
+                        "Сахар — 230г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Заварить лаванду в горячих сливках. Муку смешать с разрыхлителем.",
+                        "Взбить сливочное масло с сахаром, яйцами и лавандовой основой.",
+                        "Ввести сухие ингредиенты, выпекать 3 коржа при 170°C 25 минут.",
+                        "Соединить крем-чиз, сливки и пудру, взбить миксером.",
+                        "Положить корж, отсадить крем, выложить черничную начинку в центр."
+                    ]
+                },
+                {
+                    id: 6,
+                    title: "Лимон — Мак",
+                    type: "standard",
+                    tags: ["citrus", "spicy"],
+                    description: "Ароматные цитрусовые коржи с хрустящим маком, пикантная лимонная курдия и стабильный крем-чиз.",
+                    image: "c0bb14d48950cbf79662b3a09fb6c4a6.jpg",
+                    ingredients: [
+                        "Мука — 300г",
+                        "Мак кондитерский — 30г",
+                        "Лимонный сок и цедра — с 2 шт.",
+                        "Крем-чиз — 400г",
+                        "Лимонный курд — 180г",
+                        "Масло сливочное — 115г",
+                        "Сахар — 250г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 2 шт.",
+                        "Разрыхлитель теста — 10г"
+                    ],
+                    steps: [
+                        "Смешать муку, мак, цедру лимона и разрыхлитель.",
+                        "Взбить масло с сахаром, яйцами и соком лимона.",
+                        "Замесить тесто, выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками и пудрой до однородности.",
+                        "Собрать торт: корж -> крем для бортиков -> лимонный курд в середину."
+                    ]
+                },
+                {
+                    id: 7,
+                    title: "Ореховый капучино",
+                    type: "standard",
+                    tags: ["coffee", "nutty"],
+                    description: "Кофейно-бисквитные коржи с легкой кофейной пропиткой, ореховое пралине и нежный крем на основе маскарпоне и крем-чиза.",
+                    image: "4d431002cc47ab20ae3de8d74ae6a3e2.jpg",
+                    ingredients: [
+                        "Мука — 280г",
+                        "Растворимый кофе (или эспрессо) — 2 ст. л.",
+                        "Ореховая паста — 50г",
+                        "Крем-чиз — 400г",
+                        "Карамель или пралине — 180г",
+                        "Масло сливочное — 120г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 160мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Смешать муку с разрыхлителем. Кофе растворить в теплой воде.",
+                        "Взбить масло с сахаром, яйцами, ореховой пастой и кофе.",
+                        "Выпекать 3 коржа при 170°C в течение 25 минут.",
+                        "Взбить сливки, крем-чиз и пудру до плотного крема.",
+                        "Положить корж, сделать окантовку из крема, выложить пралине в центр."
+                    ]
+                },
+                {
+                    id: 8,
+                    title: "Кокос — Миндаль («Раффаэлло»)",
+                    type: "standard",
+                    tags: ["coconut", "nutty"],
+                    description: "Нежнейшие кокосовые бисквиты, хрустящий миндально-вафельный слой и бархатистый крем-чиз с кокосовыми сливками.",
+                    image: "f76461eac518c5e8914029a288073a47.jpg",
+                    ingredients: [
+                        "Мука — 270г",
+                        "Кокосовая стружка — 40г",
+                        "Крем-чиз — 400г",
+                        "Кокосовые сливки — 150мл",
+                        "Сливочное масло — 120г",
+                        "Сахар — 230г",
+                        "Белый шоколад и миндаль — 150г",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем, смешать с кокосовой стружкой.",
+                        "Взбить сливочное масло с сахаром и яйцами до пышной массы.",
+                        "Выпекать 3 коржа при 170°C в течение 25 минут.",
+                        "Взбить крем-чиз с кокосовыми сливками и пудрой.",
+                        "Прослоить коржи кремом и белым шоколадом с миндальной крошкой."
+                    ]
+                },
+                {
+                    id: 9,
+                    title: "Фисташка — Цитрус (Грейпфрут)",
+                    type: "standard",
+                    tags: ["citrus", "nutty"],
+                    description: "Яркие фисташковые бисквиты, освежающее конфи с сочной горчинкой грейпфрута и плотный сливочный крем.",
+                    image: "f35349d26e5f84ea23bee8c39d1d6136.jpg",
+                    ingredients: [
+                        "Мука — 260г",
+                        "Фисташковая паста — 50г",
+                        "Крем-чиз — 400г",
+                        "Пюре грейпфрута — 200г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем.",
+                        "Взбить масло с сахаром, яйцами и натуральной фисташковой пастой.",
+                        "Выпекать 3 коржа при 170°C в течение 25 минут.",
+                        "Взбить холодный крем-чиз со сливками 33% и пудрой.",
+                        "Собрать по схеме: корж -> кольцо из крема -> грейпфрутовое конфи в центр."
+                    ]
+                },
+                {
+                    id: 10,
+                    title: "Груша — Дор Блю",
+                    type: "standard",
+                    tags: ["fruit", "cheese"],
+                    description: "Пряные ванильные коржи с карамелизированной грушей и благородным кремом с нотками сыра с голубой плесенью.",
+                    image: "31643693761406c203ef94525766ce9d.jpg",
+                    ingredients: [
+                        "Мука — 290г",
+                        "Крем-чиз — 350г",
+                        "Сыр Дор Блю — 60г",
+                        "Груша свежая — 200г",
+                        "Сливочное масло — 120г",
+                        "Сахар — 230г",
+                        "Сливки 33% — 160мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 10г"
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем и корицей.",
+                        "Взбить масло с сахаром и яйцами в пышную массу.",
+                        "Замесить тесто, выпекать 3 коржа при 170°C 25 минут.",
+                        "Растопить Дор Блю в теплых сливках, охладить и взбить с крем-чизом.",
+                        "Собрать: корж -> сырный крем -> карамелизированная груша -> корж."
+                    ]
+                },
+                {
+                    id: 11,
+                    title: "Смородина — Эрл Грей",
+                    type: "standard",
+                    tags: ["berry", "tea"],
+                    description: "Ароматные бисквиты с бергамотом, насыщенное конфи из черной смородины и легкий сливочно-сырный крем.",
+                    image: "f821c97a95fd70655a466458b015ab67.jpg",
+                    ingredients: [
+                        "Мука — 300г",
+                        "Чай Эрл Грей (крепкая заварка) — 50мл",
+                        "Смородиновое пюре — 200г",
+                        "Крем-чиз — 400г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 250г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем и измельченным чаем.",
+                        "Взбить масло с сахаром, яйцами и концентрированной заваркой.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз, сливки 33% и сахарную пудру.",
+                        "На корж отсадить бортик из крема, в центр выложить смородиновое конфи."
+                    ]
+                },
+                {
+                    id: 12,
+                    title: "Тропическая маракуйя — Молочный шоколад",
+                    type: "standard",
+                    tags: ["tropical", "chocolate"],
+                    description: "Мягкие шоколадные бисквиты с глубоким вкусом какао, яркая экзотическая начинка из пюре маракуи и нежный крем-чиз.",
+                    image: "395ce1855b0e7818c3c79bbc64c3a531.jpg",
+                    ingredients: [
+                        "Мука — 260г",
+                        "Какао-порошок — 30г",
+                        "Крем-чиз — 400г",
+                        "Пюре маракуи — 200г",
+                        "Сливочное масло — 120г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Смешать муку с какао-порошком и разрыхлителем, просеять.",
+                        "Масло взбить с сахаром и яйцами до пышности.",
+                        "Выпекать 3 шоколадных коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками 33% и сахарной пудрой.",
+                        "Собрать: корж -> крем с бортиком -> пюре маракуи в центр."
+                    ]
+                },
+                {
+                    id: 13,
+                    title: "Клубника — Базилик",
+                    type: "standard",
+                    tags: ["berry", "spicy"],
+                    description: "Ароматные ванильные коржи с тонким шлейфом свежего зеленого базилика, сочная клубничная начинка и легкий крем.",
+                    image: "3752a417fed251954434fcecf51510e7.jpg",
+                    ingredients: [
+                        "Мука — 280г",
+                        "Свежий базилик — 15г",
+                        "Крем-чиз — 400г",
+                        "Клубничное пюре — 200г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 230г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Базилик измельчить в блендере с сахаром. Муку смешать с разрыхлителем.",
+                        "Взбить сливочное масло с сахаром, яйцами и базиликовой массой.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками и пудрой до плотности.",
+                        "Собрать: корж -> крем-окантовка -> ягодное клубничное конфи."
+                    ]
+                },
+                {
+                    id: 14,
+                    title: "Инжир — Грецкий орех",
+                    type: "standard",
+                    tags: ["fruit", "nutty"],
+                    description: "Сытные пряные коржи с кусочками спелого инжира, ореховой прослойкой и плотным сливочно-сырным кремом.",
+                    image: "d6ad094ceddad827bae20cc1052694d3.jpg",
+                    ingredients: [
+                        "Мука — 290г",
+                        "Грецкие орехи (молотые) — 50г",
+                        "Крем-чиз — 400г",
+                        "Пюре или джем из инжира — 200г",
+                        "Сливочное масло — 120г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 160мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 10г"
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем и измельченными орехами.",
+                        "Взбить размягченное масло с сахаром и яйцами до пышности.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Соединить сливки, крем-чиз и пудру, взбить миксером.",
+                        "Положить корж, сделать крем-бортик, выложить инжирную начинку."
+                    ]
+                },
+                {
+                    id: 15,
+                    title: "Мята — Лайм («Мохито»)",
+                    type: "standard",
+                    tags: ["citrus", "spicy"],
+                    description: "Освежающие мятно-лаймовые бисквиты с яркой цитрусовой кислинкой и стабильным нежным крем-чизом.",
+                    image: "4fff370825ff7b19da24aaf3b9f2450f.jpg",
+                    ingredients: [
+                        "Мука — 280г",
+                        "Свежая мята — пучок",
+                        "Лайм (сок и цедра) — 2 шт.",
+                        "Крем-чиз — 400г",
+                        "Лаймовый курд — 180г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 250г",
+                        "Сливки 33% — 150мл",
+                        "Яйца куриные — 3 шт.",
+                        "Разрыхлитель теста — 8г"
+                    ],
+                    steps: [
+                        "Листья мяты измельчить. Муку смешать с разрыхлителем и цедрой лайма.",
+                        "Взбить масло с сахаром, яйцами и соком лайма.",
+                        "Объединить ингредиенты, выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками и пудрой.",
+                        "Прослоить коржи кремом, зафиксировать бортики, в центр добавить курд."
+                    ]
+                },
+                {
+                    id: 16,
+                    title: "Домашний «Наполеон»",
+                    type: "non_standard",
+                    tags: ["layered", "custard"],
+                    description: "Многослойный торт из тончайших хрустящих коржей на сливочном масле, пропитанных ванильно-заварным кремом.",
+                    image: "b1ed73c803d867e3133da7d3a494103a.jpg",
+                    ingredients: [
+                        "Мука — 400г",
+                        "Масло сливочное (82.5%) — 200г",
+                        "Ледяная вода — 120мл",
+                        "Яйца — 3 шт.",
+                        "Молоко — 500мл",
+                        "Сахар — 200г",
+                        "Сливки 33% — 150мл",
+                        "Кукурузный крахмал — 30г"
+                    ],
+                    steps: [
+                        "Натереть холодное масло в муку. Добавить воду с яйцом, замесить тесто и охладить.",
+                        "Раскатать коржи максимально тонко, выпекать при 200°C по 5–7 минут.",
+                        "Сварить заварную основу из молока, яиц, сахара и крахмала. Остудить и соединить со взбитыми сливками.",
+                        "Промазать коржи кремом, обсыпать крошкой, убрать в холод на 8-12 часов."
+                    ]
+                },
+                {
+                    id: 17,
+                    title: "Итальянский «Тирамису»",
+                    type: "non_standard",
+                    tags: ["coffee", "cheese"],
+                    description: "Воздушный десерт из бисквитного печенья Савоярди, пропитанного эспрессо, и невесомого крема из Маскарпоне.",
+                    image: "6728392010b70b2dccbf9a35ead1a9a4.jpg",
+                    ingredients: [
+                        "Печенье Савоярди — 200г",
+                        "Сыр Маскарпоне — 400г",
+                        "Сливки 33% — 150мл",
+                        "Сахарная пудра — 120г",
+                        "Кофе эспрессо — 200мл",
+                        "Какао-порошок — 15г",
+                        "Желтки куриные — 3 шт.",
+                        "Ликер Амаретто — 20мл"
+                    ],
+                    steps: [
+                        "Сварить крепкий эспрессо, добавить сахар и ликер, полностью остудить.",
+                        "Желтки взбить с пудрой на водяной бане. Взбить Маскарпоне со сливками, объединить.",
+                        "Савоярди быстро окунать в кофе и выкладывать в форму плотным слоем.",
+                        "Покрыть слоем крема, повторить слой. Охладить 6 часов и присыпать какао."
+                    ]
+                },
+                {
+                    id: 18,
+                    title: "Бисквитный торт «Черепаха»",
+                    type: "non_standard",
+                    tags: ["chocolate", "sourcream"],
+                    description: "Домашний торт из бисквитных мини-коржиков, обильно пропитанных сметанным кремом и сложенных в форме панциря.",
+                    image: "382f483a5c4ab6898a9a65f42f402227.jpg",
+                    ingredients: [
+                        "Мука — 300г",
+                        "Сахар — 250г",
+                        "Яйца куриные — 6 шт.",
+                        "Какао-порошок — 20г",
+                        "Разрыхлитель теста — 10г",
+                        "Сметана (25–30%) — 500г",
+                        "Масло сливочное — 100г",
+                        "Сахарная пудра — 150г",
+                        "Шоколад темный — 80г"
+                    ],
+                    steps: [
+                        "Яйца взбить с сахаром, ввести муку с какао и разрыхлителем.",
+                        "Выкладывать тесто ложкой на пергамент лепешками, выпекать при 180°C 7-10 минут.",
+                        "Охлажденную сметану взбить с мягким сливочным маслом и пудрой.",
+                        "Мини-коржики обмакивать в крем и выкладывать горкой. Полить глазурью."
+                    ]
+                },
+                {
+                    id: 19,
+                    title: "Немецкий «Шварцвальд» (Черный лес)",
+                    type: "standard",
+                    tags: ["chocolate", "berry"],
+                    description: "Насыщенные шоколадные бисквиты с пропиткой, пряная вишневая начинка и пышный сливочный крем.",
+                    image: "36eb4e70548b0982ad768a14681829de.jpg",
+                    ingredients: [
+                        "Мука — 240г",
+                        "Какао-порошок — 45г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 250г",
+                        "Яйца куриные — 4 шт.",
+                        "Вишня без косточек — 300г",
+                        "Кукурузный крахмал — 20г",
+                        "Сливки 33% — 400мл",
+                        "Сахарная пудра — 120г"
+                    ],
+                    steps: [
+                        "Муку просеять с какао и разрыхлителем. Взбить масло с сахаром и яйцами.",
+                        "Выпекать 3 коржа при 170°C в течение 25 минут.",
+                        "Вишню проварить с сахаром и крахмалом. Сливки взбить с пудрой.",
+                        "Чередовать: корж -> крем-бортик -> вишня -> корж."
+                    ]
+                },
+                {
+                    id: 20,
+                    title: "Медовый торт «Рыжик» с черносливом",
+                    type: "non_standard",
+                    tags: ["honey", "nutty"],
+                    description: "Классические медовые коржи, сладкий чернослив, грецкий орех и нежный сметанный крем.",
+                    image: "2686c38fcd53e3d863375645c49eabf7.jpg",
+                    ingredients: [
+                        "Мука — 380г",
+                        "Мед натуральный — 70г",
+                        "Сливочное масло — 100г",
+                        "Сахар — 180г",
+                        "Яйца — 2 шт.",
+                        "Сода — 6г",
+                        "Сметана 25% — 500г",
+                        "Чернослив и орехи — по 100г"
+                    ],
+                    steps: [
+                        "Прогреть мед, сахар и масло, добавить соду. В остывшую массу ввести яйца и муку.",
+                        "Раскатать 8 коржей, выпекать при 180°C по 4–5 минут.",
+                        "Взбить сметану с пудрой. Прослаивать коржи кремом, черносливом и орехами."
+                    ]
+                },
+                {
+                    id: 21,
+                    title: "Клубнично-лаймовый «Мохито»",
+                    type: "standard",
+                    tags: ["berry", "citrus"],
+                    description: "Освежающие бисквиты с цедрой лайма и нотками мяты, яркая клубничная начинка и легкий крем-чиз.",
+                    image: "84a5256ca0c1e9809bab01f59fca1396.jpg",
+                    ingredients: [
+                        "Мука — 280г",
+                        "Крем-чиз — 400г",
+                        "Клубничное пюре — 200г",
+                        "Сливочное масло — 115г",
+                        "Сахар — 240г",
+                        "Сливки 33% — 150мл",
+                        "Лайм и мята — по вкусу",
+                        "Яйца — 3 шт."
+                    ],
+                    steps: [
+                        "Муку просеять с цедрой. Масло взбить с сахаром, яйцами и мятной кашицей.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками. Прослоить торт кремом и клубничным конфи."
+                    ]
+                },
+                {
+                    id: 22,
+                    title: "Банановый с карамельным пралине",
+                    type: "standard",
+                    tags: ["fruit", "caramel"],
+                    description: "Мягкие и влажные банановые бисквиты с корицей, прослойка из карамели с орешками и нежный крем.",
+                    image: "c5bee9a8459ea59ee4890ee6cef4518a.jpg",
+                    ingredients: [
+                        "Мука — 290г",
+                        "Спелые бананы — 250г",
+                        "Крем-чиз — 400г",
+                        "Карамель — 180г",
+                        "Сливочное масло — 110г",
+                        "Сахар — 200г",
+                        "Сливки 33% — 150мл",
+                        "Корица — 1/2 ч. л."
+                    ],
+                    steps: [
+                        "Бананы пюрировать, смешать с маслом, сахаром, яйцами и мукой.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Взбить крем-чиз со сливками. Собрать торт, чередуя крем и карамель с орехами."
+                    ]
+                },
+                {
+                    id: 23,
+                    title: "Пряная груша с горгонзолой",
+                    type: "standard",
+                    tags: ["fruit", "cheese"],
+                    description: "Пряные ванильные коржи с имбирем, карамелизированная груша и сливочный крем с сыром Горгонзола.",
+                    image: "5d095f10c27664648f97a4aa6b6cbcc5.jpg",
+                    ingredients: [
+                        "Мука — 300г",
+                        "Крем-чиз — 350г",
+                        "Сыр Горгонзола — 70г",
+                        "Свежие груши — 250г",
+                        "Сливочное масло — 120г",
+                        "Сахар — 230г",
+                        "Сливки 33% — 150мл",
+                        "Имбирь сухой — 1/3 ч. л."
+                    ],
+                    steps: [
+                        "Муку просеять с разрыхлителем и имбирем, соединить с масляной основой.",
+                        "Выпекать 3 коржа при 170°C 25 минут.",
+                        "Сыр Горгонзола размять со сливками, взбить с крем-чизом. Груши обжарить.",
+                        "Собрать торт, чередуя коржи, сырный крем и обжаренную грушу."
+                    ]
+                }
+            ],
+
+            builderComponents: {
+                sponge: [
+                    { id: 's-vanilla', name: 'Ванильный Бисквит', color: 'bg-amber-200 border-amber-300', text: 'text-amber-900', icon: '🍞' },
+                    { id: 's-choco', name: 'Шоколадный Бисквит', color: 'bg-amber-900 border-amber-950', text: 'text-amber-100', icon: '🍫' },
+                    { id: 's-red', name: 'Красный Бархат', color: 'bg-rose-700 border-rose-900', text: 'text-rose-100', icon: '❤️' },
+                    { id: 's-pistachio', name: 'Фисташковый Бисквит', color: 'bg-emerald-300 border-emerald-400', text: 'text-emerald-950', icon: '🟢' }
+                ],
+                cream: [
+                    { id: 'c-cheese', name: 'Крем-чиз Классический', color: 'bg-amber-50 border-amber-200', text: 'text-slate-700', icon: '🧁' },
+                    { id: 'c-ganache', name: 'Шоколадный Ганаш', color: 'bg-amber-800 border-amber-900', text: 'text-amber-100', icon: '🍩' },
+                    { id: 'c-berry-cream', name: 'Ягодный Крем-чиз', color: 'bg-pink-200 border-pink-300', text: 'text-pink-900', icon: '🍓' }
+                ],
+                filling: [
+                    { id: 'f-strawberry', name: 'Клубничное Конфи', color: 'bg-rose-500 border-rose-600', text: 'text-white', icon: '🍓' },
+                    { id: 'f-caramel', name: 'Соленая Карамель', color: 'bg-amber-600 border-amber-700', text: 'text-white', icon: '🍯' },
+                    { id: 'f-mango', name: 'Манго-Маракуйя', color: 'bg-yellow-400 border-yellow-500', text: 'text-yellow-950', icon: '🥭' }
+                ],
+                toppings: [
+                    { id: 't-sprinkles', name: 'Радужная Посыпка', color: 'bg-gradient-to-r from-pink-300 via-yellow-200 to-teal-200', text: 'text-slate-800', icon: '✨' },
+                    { id: 't-nuts', name: 'Дробленый Фундук', color: 'bg-orange-300 border-orange-400', text: 'text-orange-950', icon: '🥜' },
+                    { id: 't-berries', name: 'Свежие Ягоды', color: 'bg-red-400 border-red-500', text: 'text-white', icon: '🍒' }
+                ]
+            }
+        };
+
+        /* ==========================================================================
+           РАСЧЕТ ПРИМЕРНОЙ СТОИМОСТИ (ЦЕНЫ В КРАСНОДАРЕ)
+           ========================================================================== */
+        // Базовый прайс-лист за единицу (граммы, миллилитры, штуки)
+        const KRASNODAR_PRICES = {
+            // Зерновые и базовые
+            'мука': 0.08,             // 80 руб/кг
+            'крахмал': 0.30,          // 300 руб/кг
+            'разрыхлитель': 0.40,
+            'сода': 0.10,
+            'сахар': 0.09,            // 90 руб/кг
+            'пудра': 0.12,
+
+            // Молочные продукты и сыры
+            'масло': 1.15,            // 1150 руб/кг (82.5%)
+            'крем-чиз': 0.95,         // 950 руб/кг
+            'маскарпоне': 1.30,       // 1300 руб/кг
+            'сливки': 0.80,           // 800 руб/л (33%)
+            'молоко': 0.09,           // 90 руб/л
+            'сметана': 0.35,          // 350 руб/кг
+            'дор блю': 2.20,          // 2200 руб/кг
+            'горгонзол': 2.40,       // 2400 руб/кг
+            'сыр': 1.80,
+
+            // Яйца
+            'яйц': 12,                // 120 руб / 10 шт (12 руб/шт)
+            'желтк': 12,
+
+            // Орехи, пасты, шоколад и какао
+            'фисташков': 2.80,        // 2800 руб/кг (натуральная паста)
+            'орех': 1.30,             // 1300 руб/кг (грецкий, миндаль, фундук)
+            'миндаль': 1.40,
+            'кокосов': 0.60,          // стружка / сливки
+            'какао': 0.70,            // какао-порошок
+            'шоколад': 1.10,          // белый / темный плиточный
+            'савоярди': 1.20,         // печенье Савоярди
+
+            // Фрукты, ягоды, пюре и начинки
+            'пюре': 0.75,             // малина, вишня, манго, маракуйя, смородина
+            'курд': 0.65,
+            'конфи': 0.70,
+            'вишня': 0.50,
+            'груша': 0.35,
+            'банан': 0.20,
+            'чернослив': 0.85,
+            'инжир': 1.10,
+            'лайм': 0.50,
+            'лимон': 0.30,
+            'клубник': 0.60,
+            'черник': 0.80,
+
+            // Вкусовые добавки, напитки и пряности
+            'мед': 0.60,              // 600 руб/кг
+            'карамель': 0.45,
+            'сгущен': 0.40,
+            'кофе': 0.90,             // эспрессо / растворимый
+            'чай': 0.60,              // Эрл Грей
+            'лаванд': 3.00,           // сушеные цветки
+            'базилик': 1.20,          // свежий зеленый
+            'мята': 1.00,
+            'мак': 0.70,
+            'кориц': 0.50,
+            'имбирь': 0.60,
+            'амаретто': 2.00,         // ликер (за мл)
+
+            'default': 0.40
+        };
+
+        function calculateRecipeMetrics(ingredients) {
+            if (!ingredients || !Array.isArray(ingredients)) return { cost: 0, weightKg: 0, pricePerKg: 0 };
+            
+            let totalProductCost = 0;
+            let rawWeightGrams = 0;
+
+            ingredients.forEach(ing => {
+                let str = ing.toLowerCase();
+                let amountMatch = str.match(/(\d+[\.,]?\d*)/);
+                let amount = amountMatch ? parseFloat(amountMatch[1].replace(',', '.')) : 100;
+
+                // Перевод кулинарных мер в граммы/миллилитры
+                if (str.includes('ч. л.') || str.includes('ч.л.')) amount *= 5;
+                else if (str.includes('ст. л.') || str.includes('ст.л.')) amount *= 15;
+                else if (str.includes('пучок')) amount = 25;
+                else if (str.includes('по вкусу')) amount = 20;
+                else if (str.includes('с 2 шт') || str.includes('2 шт.')) amount = 50;
+
+                // Расчет веса
+                if (str.includes('яйц') || str.includes('желтк')) {
+                    rawWeightGrams += amount * 50; // 1 яйцо ~ 50г
+                    totalProductCost += amount * KRASNODAR_PRICES['яйц'];
+                } else {
+                    rawWeightGrams += amount;
+                    // Поиск цены по ключевым словам
+                    let matchedPrice = KRASNODAR_PRICES.default;
+                    for (let key in KRASNODAR_PRICES) {
+                        if (str.includes(key)) {
+                            matchedPrice = KRASNODAR_PRICES[key];
+                            break;
+                        }
+                    }
+                    totalProductCost += amount * matchedPrice;
+                }
+            });
+
+            // Учёт упёки коржей и уварки начинок (~10% уварки)
+            let finalWeightKg = Math.round((rawWeightGrams * 0.90) / 10) / 100; 
+            
+            // Наценка на электроэнергию, инвентарь и упаковку (* 1.35)
+            let totalCost = Math.round(totalProductCost * 1.35);
+            let pricePerKg = Math.round(totalCost / finalWeightKg);
+
+            return {
+                cost: totalCost,
+                weightKg: finalWeightKg,
+                pricePerKg: pricePerKg
+            };
+        }
+
+        /* ==========================================================================
+           2. СОСТОЯНИЕ ПРИЛОЖЕНИЯ (STATE)
+           ========================================================================== */
+        let state = {
+            activeTab: 'catalog',
+            categoryFilter: 'all',
+            selectedTags: [],
+            builderTab: 'sponge',
+            customCake: []
+        };
+
+        /* ==========================================================================
+           3. НАВИГАЦИЯ И ВКЛАДКИ
+           ========================================================================== */
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+
+            document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById(`section-${tabId}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            ['catalog', 'roulette', 'builder'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (!btn) return;
+                if (t === tabId) {
+                    btn.className = "px-5 py-2 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 text-pink-600 bg-white shadow-sm";
+                } else {
+                    btn.className = "px-5 py-2 rounded-full font-bold text-sm md:text-base transition-all duration-300 flex items-center gap-2 text-slate-600 hover:text-pink-500";
+                }
+            });
+        }
+
+        /* ==========================================================================
+           4. КАТАЛОГ И ФИЛЬТРАЦИЯ
+           ========================================================================== */
+        function initCatalog() {
+            renderTagFilters();
+            renderRecipes();
+        }
+
+        function renderTagFilters() {
+            const container = document.getElementById('tag-filters-container');
+            if (!container) return;
+            container.innerHTML = DATABASE.tags.map(tag => {
+                const isSelected = state.selectedTags.includes(tag.id);
+                return `
+                        <button onclick="toggleTagFilter('${tag.id}')"
+                                class="px-3 py-1 rounded-full text-xs font-extrabold transition-all border ${isSelected ? 'bg-pink-500 text-white border-pink-500 shadow-sm' : 'bg-white text-slate-600 border-pink-200 hover:bg-pink-50'}">
+                            ${tag.label}
+                        </button>
+                    `;
+            }).join('');
+        }
+
+        function toggleTagFilter(tagId) {
+            if (state.selectedTags.includes(tagId)) {
+                state.selectedTags = state.selectedTags.filter(t => t !== tagId);
+            } else {
+                state.selectedTags.push(tagId);
+            }
+            renderTagFilters();
+            renderRecipes();
+        }
+
+        function setCategoryFilter(cat) {
+            state.categoryFilter = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-bold bg-pink-50 text-slate-600 hover:bg-pink-100 transition-all";
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-bold bg-pink-500 text-white shadow-sm transition-all";
+            }
+            renderRecipes();
+        }
+
+        function renderRecipes() {
+            const grid = document.getElementById('recipe-grid');
+            if (!grid) return;
+
+            const filtered = DATABASE.recipes.filter(recipe => {
+                const recipeTags = recipe.tags || recipe.categories || [];
+
+                if (state.categoryFilter !== 'all' && recipe.type !== state.categoryFilter) {
+                    return false;
+                }
+                if (state.selectedTags.length > 0) {
+                    const hasTag = state.selectedTags.some(tag => recipeTags.includes(tag));
+                    if (!hasTag) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                        <div class="col-span-full text-center py-12 bg-white rounded-3xl border-2 border-dashed border-pink-200">
+                            <i class="fa-solid fa-cookie text-5xl text-pink-300 mb-3"></i>
+                            <p class="text-slate-600 font-bold">Ой, тортиков с такими фильтрами не найдено!</p>
+                            <button onclick="setCategoryFilter('all'); state.selectedTags=[]; renderTagFilters(); renderRecipes();" class="mt-3 text-xs text-pink-500 font-extrabold underline">Сбросить фильтры</button>
+                        </div>
+                    `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(recipe => {
+                const recipeTags = recipe.tags || recipe.categories || [];
+                const tagBadges = recipeTags.map(tId => {
+                    const tagObj = DATABASE.tags.find(t => t.id === tId);
+                    return tagObj ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${tagObj.color}">${tagObj.label}</span>` : '';
+                }).join(' ');
+
+                const typeBadge = recipe.type === 'standard'
+                    ? `<span class="bg-teal-100 text-teal-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Стандартный</span>`
+                    : `<span class="bg-purple-100 text-purple-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Авторский</span>`;
+
+                return `
+                        <div onclick="openRecipeModal('${recipe.id}')" class="bg-white rounded-3xl border-2 border-pink-100 shadow-sm hover:shadow-sweet transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-col justify-between group">
+                            <div>
+                                <div class="h-48 overflow-hidden relative">
+                                    <img src="${recipe.image}" alt="${recipe.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80'">
+                                    <div class="absolute top-3 left-3 flex gap-1 flex-wrap">
+                                        ${typeBadge}
+                                    </div>
+                                </div>
+                                <div class="p-5 space-y-2">
+                                    <div class="flex gap-1 flex-wrap mb-1">${tagBadges}</div>
+                                    <h3 class="font-extrabold text-xl text-slate-800 group-hover:text-pink-500 transition-colors">${recipe.title}</h3>
+                                    <p class="text-xs text-slate-500 line-clamp-2 font-semibold">${recipe.description}</p>
+                                </div>
+                            </div>
+                            <div class="px-5 pb-5 pt-0">
+                                <span class="w-full py-2 bg-pink-50 text-pink-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 group-hover:bg-pink-500 group-hover:text-white transition-all">
+                                    <i class="fa-solid fa-eye"></i> Смотреть рецепт
+                                </span>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+        }
+
+        /* ==========================================================================
+           5. МОДАЛЬНОЕ ОКНО РЕЦЕПТА
+           ========================================================================== */
+        function openRecipeModal(recipeId) {
+            const recipe = DATABASE.recipes.find(r => String(r.id) === String(recipeId));
+            if (!recipe) return;
+
+            document.getElementById('modal-image').src = recipe.image;
+            document.getElementById('modal-image').onerror = function() { 
+                this.src = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80'; 
+            };
+            document.getElementById('modal-title').innerText = recipe.title;
+            document.getElementById('modal-description').innerText = recipe.description || '';
+
+            // РАСЧЕТ ВЕСА И СТОИМОСТИ
+            const metrics = calculateRecipeMetrics(recipe.ingredients);
+            
+            let priceBadge = document.getElementById('modal-price-badge');
+            if (!priceBadge) {
+                priceBadge = document.createElement('div');
+                priceBadge.id = 'modal-price-badge';
+                priceBadge.className = 'flex flex-wrap items-center gap-3 bg-amber-50 text-amber-900 border border-amber-200 p-3 rounded-2xl font-extrabold text-xs mt-3';
+                document.getElementById('modal-description').after(priceBadge);
+            }
+            priceBadge.innerHTML = `
+                <div class="flex items-center gap-1.5 text-pink-600">
+                    <i class="fa-solid fa-weight-hanging"></i> 
+                    <span>Выход: <b>~${metrics.weightKg} кг</b></span>
+                </div>
+                <div class="h-4 w-px bg-amber-200 hidden sm:block"></div>
+                <div class="flex items-center gap-1.5 text-amber-700">
+                    <i class="fa-solid fa-tag"></i> 
+                    <span>Цена за весь торт: <b>~${metrics.cost} ₽</b></span>
+                </div>
+                <div class="h-4 w-px bg-amber-200 hidden sm:block"></div>
+                <div class="flex items-center gap-1.5 text-slate-500">
+                    <i class="fa-solid fa-calculator"></i> 
+                    <span>(~${metrics.pricePerKg} ₽/кг)</span>
+                </div>
+            `;
+
+            // Отрисовка тегов, ингредиентов и шагов
+            const recipeTags = recipe.tags || recipe.categories || [];
+            document.getElementById('modal-tags').innerHTML = recipeTags.map(tId => {
+                const tagObj = DATABASE.tags.find(t => t.id === tId);
+                return tagObj ? `<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-white/90 text-slate-800 backdrop-blur-sm">${tagObj.label}</span>` : '';
+            }).join('');
+
+            document.getElementById('modal-ingredients').innerHTML = (recipe.ingredients || []).map(ing => `
+                <li class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-pink-400 text-xs"></i> ${ing}
+                </li>
+            `).join('');
+
+            document.getElementById('modal-steps').innerHTML = (recipe.steps || []).map((step, idx) => `
+                <li class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <span class="w-6 h-6 rounded-full bg-pink-400 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                    <span>${step}</span>
+                </li>
+            `).join('');
+
+            document.getElementById('recipe-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('recipe-modal').classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           6. СЛАДОСТЬ-РУЛЕТКА (ГЕНЕРАТОР СЛУЧАЙНОГО РЕЦЕПТА)
+           ========================================================================== */
+        let isSpinning = false;
+
+        function spinRoulette() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const wheel = document.getElementById('wheel-container');
+            const resultBox = document.getElementById('roulette-result');
+            const spinBtn = document.getElementById('spin-btn');
+
+            if (resultBox) resultBox.classList.add('hidden');
+            if (spinBtn) {
+                spinBtn.disabled = true;
+                spinBtn.classList.add('opacity-50');
+            }
+
+            if (wheel) wheel.classList.add('spinning');
+
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * DATABASE.recipes.length);
+                const randomRecipe = DATABASE.recipes[randomIndex];
+
+                if (wheel) wheel.classList.remove('spinning');
+
+                const titleEl = document.getElementById('result-title');
+                if (titleEl) titleEl.innerText = randomRecipe.title;
+
+                const resultBtn = document.getElementById('result-btn');
+                if (resultBtn) resultBtn.onclick = () => openRecipeModal(randomRecipe.id);
+
+                if (resultBox) resultBox.classList.remove('hidden');
+
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+
+                isSpinning = false;
+                if (spinBtn) {
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-50');
+                }
+            }, 4000);
+        }
+
+        /* ==========================================================================
+           7. ИНТЕРАКТИВНЫЙ КОНСТРУКТОР ТОРТА (DRAG & DROP)
+           ========================================================================== */
+        function setBuilderTab(tab) {
+            state.builderTab = tab;
+            document.querySelectorAll('.builder-tab-btn').forEach(btn => {
+                btn.className = "builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-600 hover:bg-pink-50 flex items-center gap-2 whitespace-nowrap";
+            });
+            const tabBtn = document.getElementById(`btab-${tab}`);
+            if (tabBtn) {
+                tabBtn.className = "builder-tab-btn px-4 py-2 rounded-xl font-bold text-sm bg-pink-500 text-white shadow-sm flex items-center gap-2 whitespace-nowrap";
+            }
+            renderBuilderPalette();
+        }
+
+        function renderBuilderPalette() {
+            const palette = document.getElementById('builder-palette');
+            if (!palette) return;
+            const items = DATABASE.builderComponents[state.builderTab] || [];
+
+            palette.innerHTML = items.map(item => `
+                    <div draggable="true"
+                         ondragstart="handleDragStart(event, '${item.id}')"
+                         onclick="addLayerToCake('${item.id}')"
+                         class="${item.color} ${item.text} p-4 rounded-2xl border-2 shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-all hover:scale-105 flex flex-col items-center justify-center text-center gap-2">
+                        <span class="text-3xl">${item.icon}</span>
+                        <span class="font-extrabold text-xs">${item.name}</span>
+                        <span class="text-[10px] opacity-75 font-bold">Нажми или перетащи</span>
+                    </div>
+                `).join('');
+        }
+
+        function handleDragStart(e, itemId) {
+            e.dataTransfer.setData('text/plain', itemId);
+            e.target.classList.add('dragging');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+            if (dropZone) {
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drop-zone-active');
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('drop-zone-active');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drop-zone-active');
+                    const itemId = e.dataTransfer.getData('text/plain');
+                    if (itemId) {
+                        addLayerToCake(itemId);
+                    }
+                });
+            }
+        });
+
+        function findComponentById(id) {
+            for (let cat in DATABASE.builderComponents) {
+                const found = DATABASE.builderComponents[cat].find(c => c.id === id);
+                if (found) return { ...found, category: cat };
+            }
+            return null;
+        }
+
+        function addLayerToCake(itemId) {
+            const comp = findComponentById(itemId);
+            if (!comp) return;
+
+            if (state.customCake.length >= 6) {
+                alert('Тортик уже очень высокий! Пора генерировать рецепт.');
+                return;
+            }
+
+            state.customCake.push(comp);
+            renderCakeStack();
+        }
+
+        function removeLayer(index) {
+            state.customCake.splice(index, 1);
+            renderCakeStack();
+        }
+
+        function renderCakeStack() {
+            const stackContainer = document.getElementById('cake-stack');
+            const placeholder = document.getElementById('placeholder-text');
+            const priceLabel = document.getElementById('builder-total-price');
+            
+            // Расчет стоимости кастомного торта (базовая цена слоя ~250-350 руб)
+            let currentTotalPrice = state.customCake.reduce((sum, layer) => {
+                // В зависимости от категории слоя назначаем примерную стоимость
+                let layerCost = 300; 
+                if (layer.category === 'toppings') layerCost = 150;
+                if (layer.category === 'filling') layerCost = 250;
+                return sum + layerCost;
+            }, 0);
+
+            if (priceLabel) {
+                priceLabel.innerText = state.customCake.length > 0 ? `~${currentTotalPrice} ₽` : '0 ₽';
+            }
+
+            if (!stackContainer) return;
+
+            if (state.customCake.length === 0) {
+                stackContainer.innerHTML = '';
+                if (placeholder) {
+                    stackContainer.appendChild(placeholder);
+                    placeholder.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (placeholder) placeholder.classList.add('hidden');
+
+            stackContainer.innerHTML = state.customCake.map((layer, idx) => `
+                <div onclick="removeLayer(${idx})" 
+                     title="Кликните, чтобы удалить слой"
+                     class="cake-layer-anim w-48 sm:w-56 h-8 ${layer.color} ${layer.text} rounded-xl border-2 flex items-center justify-between px-3 text-xs font-bold shadow-sm cursor-pointer hover:opacity-80 transition-opacity">
+                    <span>${layer.icon} ${layer.name}</span>
+                    <i class="fa-solid fa-xmark opacity-50 hover:opacity-100"></i>
+                </div>
+            `).join('');
+        }
+
+        function resetBuilder() {
+            state.customCake = [];
+            renderCakeStack();
+        }
+
+        function generateCustomRecipe() {
+            if (state.customCake.length === 0) {
+                alert('Сначала добавьте хотя бы один слой в конструкторе!');
+                return;
+            }
+
+            const title = "Кастомный Торт «Сладкая Фантазия»";
+            const description = "Уникальный торт, собранный по вашему личному рецепту в нашем конструкторе!";
+
+            const ingredients = state.customCake.map(layer => `${layer.name} — 1 слой (ок. 150г)`);
+            ingredients.push('Базовый сахарный сироп для пропитки — 100мл');
+
+            const steps = [
+                'Подготовить все выбранные компоненты и выпечь необходимые бисквиты.',
+                'На сервировочную подставку выложить первый слой.',
+                ...state.customCake.map((layer, i) => `Слой ${i + 1}: Аккуратно уложить и разровнять ${layer.name}.`),
+                'Охладить торт в холодильнике минимум 3 часа для стабилизации.'
+            ];
+
+            document.getElementById('modal-image').src = 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80';
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-description').innerText = description;
+            document.getElementById('modal-tags').innerHTML = `<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-pink-500 text-white">✨ Кастомный рецепт</span>`;
+
+            document.getElementById('modal-ingredients').innerHTML = ingredients.map(ing => `
+                    <li class="flex items-center gap-2">
+                        <i class="fa-solid fa-check text-pink-400 text-xs"></i> ${ing}
+                    </li>
+                `).join('');
+
+            document.getElementById('modal-steps').innerHTML = steps.map((step, idx) => `
+                    <li class="flex items-start gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span class="w-6 h-6 rounded-full bg-teal-400 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+                        <span>${step}</span>
+                    </li>
+                `).join('');
+
+            document.getElementById('recipe-modal').classList.remove('hidden');
+        }
+
+        /* ==========================================================================
+           8. ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+           ========================================================================== */
+        window.onload = function () {
+            initCatalog();
+            renderBuilderPalette();
+        };
+    </script>
+</body>
+</html>
